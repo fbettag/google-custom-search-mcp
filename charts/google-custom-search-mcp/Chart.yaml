@@ -1,0 +1,37 @@
+apiVersion: v2
+name: google-custom-search-mcp
+description: Google Custom Search MCP Server for Claude and other MCP clients
+version: 0.1.0
+appVersion: "0.1.0"
+type: application
+
+# Dependencies if needed in future
+dependencies: []
+
+# Keywords for discovery
+keywords:
+  - mcp
+  - model-context-protocol
+  - google
+  - search
+  - claude
+  - ai
+
+# Maintainers
+maintainers:
+  - name: Franz Bettag
+    url: https://github.com/fbettag
+
+# Sources
+sources:
+  - https://github.com/fbettag/google-custom-search-mcp
+
+# Icon (optional)
+# icon: https://example.com/icon.png
+
+# Annotations
+annotations:
+  artifacthub.io/prerelease: "false"
+  artifacthub.io/links: |
+    - name: GitHub
+      url: https://github.com/your-username/google-custom-search-mcp

@@ -1,0 +1,24 @@
+Google Custom Search MCP Server has been deployed!
+
+{{- if .Values.ingress.enabled }}
+Access the server at:
+{{- range .Values.ingress.hosts }}
+  http{{ if $.Values.ingress.tls }}s{{ end }}://{{ .host }}
+{{- end }}
+{{- else if eq .Values.service.type "LoadBalancer" }}
+Get the external IP by running:
+  kubectl get svc {{ include "google-custom-search-mcp.fullname" . }}
+{{- else }}
+Access the server within the cluster at:
+  http://{{ include "google-custom-search-mcp.fullname" . }}:{{ .Values.service.port }}
+{{- end }}
+
+Configuration:
+- Search Engine ID: {{ .Values.google.searchEngineId }}
+- Service Account: {{ if .Values.serviceAccount.base64.enabled }}Base64 encoded{{ else if .Values.serviceAccount.existingFile.enabled }}File mounted{{ else }}Not configured{{ end }}
+
+To verify the deployment, check the pods:
+  kubectl get pods -l app.kubernetes.io/name={{ include "google-custom-search-mcp.name" . }}
+
+View logs:
+  kubectl logs -l app.kubernetes.io/name={{ include "google-custom-search-mcp.name" . }}

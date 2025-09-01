@@ -1,0 +1,91 @@
+# Default values for google-custom-search-mcp
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+# Replica count
+replicaCount: 1
+
+# Image configuration
+image:
+  repository: ghcr.io/fbettag/google-custom-search-mcp
+  tag: main
+  pullPolicy: Always
+
+# Service account configuration
+serviceAccount:
+  # Use existing service account JSON file (mount as volume)
+  existingFile: 
+    enabled: false
+    path: ""
+    
+  # Use base64 encoded service account (recommended for Kubernetes)
+  base64:
+    enabled: true
+    value: ""
+
+# Google Custom Search configuration
+google:
+  searchEngineId: ""
+
+# Environment variables
+env:
+  # Debug mode
+  debug: false
+  
+  # Additional environment variables
+  extra: {}
+
+# Container resources
+resources:
+  requests:
+    memory: "64Mi"
+    cpu: "50m"
+  limits:
+    memory: "128Mi"
+    cpu: "100m"
+
+# Pod configuration
+pod:
+  annotations: {}
+  labels: {}
+  
+  # Security context
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+    runAsGroup: 1000
+    fsGroup: 1000
+
+# Service configuration
+service:
+  type: ClusterIP
+  port: 3000
+  
+  # Additional annotations for service
+  annotations: {}
+
+# Ingress configuration (optional)
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+  hosts:
+    - host: mcp.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+
+# Persistence (for service account file if using file mount)
+persistence:
+  enabled: false
+  accessMode: ReadOnly
+  size: 1Gi
+  storageClass: ""
+
+# Node selector and affinity
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}

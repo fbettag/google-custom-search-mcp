@@ -1,0 +1,143 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.13"]
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+    
+    - name: Install UV
+      run: pip install uv
+    
+    - name: Sync dependencies
+      run: uv sync --extra dev
+    
+    - name: Run tests
+      run: uv run pytest tests/ -v --cov=server --cov-report=xml
+      env:
+        GOOGLE_SERVICE_ACCOUNT_BASE64: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_BASE64 }}
+        GOOGLE_SEARCH_ENGINE_ID: ${{ secrets.GOOGLE_SEARCH_ENGINE_ID }}
+    
+    - name: Upload coverage reports
+      uses: codecov/codecov-action@v4
+      with:
+        file: ./coverage.xml
+    
+    - name: Run linting
+      run: uv run ruff check .
+    
+    - name: Run type checking
+      run: uv run mypy server.py
+    
+    - name: Format check with black
+      run: uv run black --check .
+
+  security:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Install UV
+      run: pip install uv
+
+    - name: Sync dependencies
+      run: uv sync --extra dev
+
+    - name: Run security audit
+      run: uv audit || true
+
+    - name: Check for vulnerabilities
+      run: uv pip check || true
+
+    - name: Scan for secrets
+      uses: gitleaks/gitleaks-action@v2
+      continue-on-error: true
+
+  helm:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Helm
+      uses: azure/setup-helm@v3
+      with:
+        version: '3.13.0'
+
+    - name: Lint Helm chart
+      run: |
+        helm lint charts/google-custom-search-mcp/
+        echo "Helm lint completed successfully"
+
+    - name: Test template rendering
+      run: |
+        helm template google-custom-search-test charts/google-custom-search-mcp/ --debug
+        echo "Helm template rendering test completed"
+
+    - name: Validate values schema
+      run: |
+        # Test with different value combinations
+        helm template test charts/google-custom-search-mcp/ --set google.searchEngineId=test
+        helm template test charts/google-custom-search-mcp/ --set serviceAccount.file.value="/path/to/file"
+        helm template test charts/google-custom-search-mcp/ --set serviceAccount.base64.value="dGVzdA=="
+        echo "Values schema validation completed"
+
+  docker-build:
+    runs-on: ubuntu-latest
+    needs: test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+    
+    - name: Login to GitHub Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    
+    - name: Extract metadata for Docker
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: |
+          ghcr.io/${{ github.repository }}
+        tags: |
+          type=sha,prefix=,suffix=-{{sha}}
+          type=ref,event=branch
+          type=ref,event=tag
+          type=ref,event=pr
+          type=semver,pattern={{version}}
+          type=semver,pattern={{major}}.{{minor}}
+    
+    - name: Build and push Docker image
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        push: true
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
