@@ -1,0 +1,25 @@
+version = 1
+requires-python = ">=3.13"
+
+[[package]]
+name = "google-custom-search-mcp"
+version = "0.1.0"
+requires-python = ">=3.13"
+source = { virtual = true }
+
+dependencies = [
+    "fastmcp",
+    "google-api-python-client>=2.0.0",
+    "google-auth>=2.0.0",
+    "google-auth-httplib2>=0.1.0",
+    "pydantic",
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "fastmcp", specifier = ">=0.1.0" },
+    { name = "google-api-python-client", specifier = ">=2.0.0" },
+    { name = "google-auth", specifier = ">=2.0.0" },
+    { name = "google-auth-httplib2", specifier = ">=0.1.0" },
+    { name = "pydantic", specifier = ">=2.0.0" },
+]
